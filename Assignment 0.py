@@ -175,3 +175,50 @@ axes[1, 1].set_title("Grade Distribution")
 plt.tight_layout()
 plt.savefig("revision_plots.png")
 print("\nPlots saved as revision_plots.png")
+
+
+# SECTION 3: SIGNAL DATA - MIT-BIH Arrhythmia Database (ECG)
+
+print("\n" + "=" * 60)
+print("SECTION 3: SIGNAL DATA (ECG)")
+print("=" * 60)
+
+# --- Download & load a sample record (record "100") ---
+# wfdb.rdrecord PhysioNet se seedha data fetch karta hai (pn_dir specify karne se)
+record = wfdb.rdrecord("100", pn_dir="mitdb")
+annotation = wfdb.rdann("100", "atr", pn_dir="mitdb")
+# rdrecord -> actual signal (ECG waveform) data
+# rdann -> expert annotations (beat labels, R-peak positions)
+
+print("\nRecord name:", record.record_name)
+print("Sampling frequency:", record.fs, "Hz")   # kitne samples per second liye gaye
+print("Signal shape:", record.p_signal.shape)   # (samples, channels)
+print("Channel names:", record.sig_name)
+
+# --- Plot a segment of the ECG waveform with beat annotations ---
+segment_length = 1000   # sirf pehle 1000 samples plot karenge (poora record bahut lamba hai)
+signal = record.p_signal[:segment_length, 0]   # channel 0 (first lead) ka data
+
+plt.figure(figsize=(12, 4))
+plt.plot(signal, color="blue", label="ECG signal")
+
+# Annotation positions jo is segment ke andar aati hain, unko red dot se mark kar rahe hain
+ann_in_segment = annotation.sample[annotation.sample < segment_length]
+plt.scatter(ann_in_segment, signal[ann_in_segment], color="red", label="Beat annotation", zorder=5)
+
+plt.title("ECG Signal Segment with Beat Annotations (Record 100)")
+plt.xlabel("Sample index")
+plt.ylabel("Amplitude (mV)")
+plt.legend()
+plt.tight_layout()
+plt.savefig("ecg_segment.png")
+print("\nECG plot saved as ecg_segment.png")
+
+# --- Basic heart-rate variability / beat interval statistics ---
+rr_intervals = np.diff(annotation.sample) / record.fs   # consecutive beats ke beech ka time (seconds)
+heart_rate = 60 / rr_intervals   # beats per minute me convert
+
+print("\nNumber of detected beats:", len(annotation.sample))
+print("Average RR interval (seconds):", rr_intervals.mean())
+print("Average heart rate (bpm):", heart_rate.mean())
+print("Heart rate std (bpm):", heart_rate.std())
